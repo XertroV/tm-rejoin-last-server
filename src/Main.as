@@ -14,9 +14,25 @@ const uint SecondsBetweenResave = 5 * 60; // update once per 5 minutes to keep a
 const double TAU = 6.28318530717958647692;
 
 void Main() {
+    PermissionsOkay();
     LoadPreviousJoinLink();
     startnew(MainCoro);
+// #if DEV
+//     NotifyPermissionsError("PlayLocalMap");
+// #endif
 }
+
+bool permissionsAreOkay = false;
+bool PermissionsOkay() {
+    bool allowed = Permissions::PlayLocalMap();
+    if (!allowed) {
+        NotifyPermissionsError("PlayLocalMap");
+        while (true) yield();
+    }
+    permissionsAreOkay = allowed;
+    return allowed;
+}
+
 
 void LoadPreviousJoinLink() {
     uint startTime = Time::Now;
@@ -86,7 +102,7 @@ void OnClickJoin() {
     ```
     */
     lastClick = Time::Now;
-    Audio::Play(menuClick, 0.25);
+    Audio::Play(menuClick, 0.20);
     string jl = g_lastJoinLink.Replace("#join", "#qjoin").Replace("#spectate", "#qspectate");
     cast<CTrackMania>(GetApp()).ManiaPlanetScriptAPI.OpenLink(jl, CGameManiaPlanetScriptAPI::ELinkType::ManialinkBrowser);
 }
@@ -178,4 +194,9 @@ void RenderMenu() {
 void NotifyDepError(const string &in msg) {
     warn(msg);
     UI::ShowNotification(Meta::ExecutingPlugin().Name + ": Dependency Error", msg, vec4(.9, .6, .1, .5), 15000);
+}
+
+void NotifyPermissionsError(const string &in issues) {
+    warn("Lacked permissions: " + issues);
+    UI::ShowNotification(Meta::ExecutingPlugin().Name + ": Permissions Error", "Lacking permission(s): " + issues, vec4(.9, .6, .1, .5), 15000);
 }
