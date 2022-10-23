@@ -24,9 +24,9 @@ void Main() {
 
 bool permissionsAreOkay = false;
 bool PermissionsOkay() {
-    bool allowed = Permissions::PlayLocalMap();
+    bool allowed = Permissions::PlayPublicClubRoom ();
     if (!allowed) {
-        NotifyPermissionsError("PlayLocalMap");
+        NotifyPermissionsError("Permissions::PlayPublicClubRoom (club access required)");
         while (true) yield();
     }
     permissionsAreOkay = allowed;
