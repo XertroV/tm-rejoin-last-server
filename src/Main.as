@@ -52,7 +52,7 @@ void LoadPreviousJoinLink() {
 
 void MainCoro() {
     bool canSaveJoinLink;
-    while (true) {
+    while (permissionsAreOkay) {
         auto si = GetServerInfo(GetApp());
         canSaveJoinLink = si !is null && si.JoinLink.Length > 0;
         // canSaveJoinLink && (new joinlink || should update TS)
@@ -84,7 +84,7 @@ void WriteOutJoinLink(const string &in jl) {
 /** Called whenever a mouse button is pressed. `x` and `y` are the viewport coordinates.
 */
 UI::InputBlocking OnMouseButton(bool down, int button, int x, int y) {
-    if (!down || button != 0 || !IsButtonActive()) return UI::InputBlocking::DoNothing;
+    if (!down || button != 0 || !IsButtonActive() || !permissionsAreOkay) return UI::InputBlocking::DoNothing;
     if (Within(vec2(x, y), buttonPos, buttonSize)) {
         startnew(OnClickJoin);
         return UI::InputBlocking::Block;
@@ -101,6 +101,7 @@ void OnClickJoin() {
         JoinLink = {{{P}}}TL::Replace(JoinLink, "#spectate", "#qspectate");
     ```
     */
+    if (!permissionsAreOkay) return;
     lastClick = Time::Now;
     Audio::Play(menuClick, 0.20);
     string jl = g_lastJoinLink.Replace("#join", "#qjoin").Replace("#spectate", "#qspectate");
@@ -108,6 +109,7 @@ void OnClickJoin() {
 }
 
 bool IsButtonActive() {
+    if (!permissionsAreOkay) return false;
     if (uint64(Time::Stamp) > g_lastJoinLinkTS + 3600) return false; // don't show button >1hr after g_lastJoinLinkTS
     if (Time::Now < (lastClick + 10000) && lastClick != 0) return false;
     if (!IsInMainMenu(GetApp())) return false;
