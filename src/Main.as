@@ -1,6 +1,8 @@
 string g_lastJoinLink = "";
 uint64 g_lastJoinLinkTS = 0;
 int nvgFontMontseratt = nvg::LoadFont("fonts/Montserrat-ExtraBoldItalic.ttf");
+Audio::Sample@ menuClick = Audio::LoadSample("audio/MenuSelection.wav");
+Audio::Sample@ menuOnHover = Audio::LoadSample("audio/MenuSelection2.wav");
 
 const string JoinLinkFilePath = IO::FromStorageFolder("lastJoinLink.json.txt");
 #if DEV
@@ -84,6 +86,7 @@ void OnClickJoin() {
     ```
     */
     lastClick = Time::Now;
+    Audio::Play(menuClick, 0.25);
     string jl = g_lastJoinLink.Replace("#join", "#qjoin").Replace("#spectate", "#qspectate");
     cast<CTrackMania>(GetApp()).ManiaPlanetScriptAPI.OpenLink(jl, CGameManiaPlanetScriptAPI::ELinkType::ManialinkBrowser);
 }

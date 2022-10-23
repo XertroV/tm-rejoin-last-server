@@ -46,13 +46,21 @@ vec2 get_buttonSize() {
     return buttonSize1440 * (s.y / RefScreen.y);
 }
 
+bool isHovering = false;
+
 void UpdateButtonHover(float dt) {
     bool fadeUp = Within(lastMousePos, buttonPos, buttonSize);
+    bool _nextIsHovering = fadeUp;
     float sign = fadeUp ? 1 : -1;
     if (fadeUp) {
         buttonBorder = Math::Min(1, buttonBorder + sign * dt / buttonHoverAnimDuration);
     } else {
         buttonBorder = Math::Max(0, buttonBorder + sign * dt / buttonHoverAnimDuration);
+    }
+    if (_nextIsHovering != isHovering) {
+        isHovering = _nextIsHovering;
+        if (IsButtonActive())
+            Audio::Play(menuOnHover, 0.25);
     }
 }
 
