@@ -1,5 +1,13 @@
 
-string GetCurrentPage() {
+// only home page atm
+bool IsAppropriateMenu() {
+    const string currPage = GetCurrentPage();
+    if (currPage.Length == 0) return false;
+    if (currPage == "HomePage") return true; // can add more pages later on; for now only home page seems necessary
+    return false;
+}
+
+const string GetCurrentPage() {
     auto layer = GetCurrentUILayer();
     if (layer is null) return "";
     return layer.ManialinkPageUtf8.SubStr(23, 100).Split('"', 2)[0];
@@ -23,12 +31,4 @@ CGameUILayer@ GetCurrentUILayer() {
         }
     }
     return null;
-}
-
-// only home page atm
-bool IsAppropriateMenu() {
-    auto currPage = GetCurrentPage();
-    if (currPage.Length == 0) return false;
-    if (currPage == "HomePage") return true;
-    return false;
 }

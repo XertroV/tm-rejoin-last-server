@@ -6,7 +6,7 @@ const string JoinLinkFilePath = IO::FromStorageFolder("lastJoinLink.json.txt");
 #if DEV
 const uint SecondsBetweenResave = 1;
 #else
-const uint SecondsBetweenResave = 60; // update once per minute to keep an accurate-enough timestamp
+const uint SecondsBetweenResave = 5 * 60; // update once per 5 minutes to keep an accurate-enough timestamp
 #endif
 
 const double TAU = 6.28318530717958647692;
@@ -25,7 +25,7 @@ void LoadPreviousJoinLink() {
         g_lastJoinLink = j['joinLink'];
         g_lastJoinLinkTS = Text::ParseUInt64(j['ts']);
         trace_benchmark("Load last JoinLink", startTime);
-        dev_trace("Loaded JoinLink: " + g_lastJoinLink);
+        dev_trace("Loaded JoinLink: " + g_lastJoinLink + "; ts: " + g_lastJoinLinkTS + "; now - then: " + (Time::Stamp - g_lastJoinLinkTS));
     } catch {
         warn('Error loading last join link JSON: ' + getExceptionInfo());
         return;
@@ -74,6 +74,8 @@ UI::InputBlocking OnMouseButton(bool down, int button, int x, int y) {
     return UI::InputBlocking::DoNothing;;
 }
 
+uint lastClick = 0;
+
 void OnClickJoin() {
     /* from `Titles/Trackmania/Scripts/Libs/Nadeo/TMNext/TrackMania/Menu/Components/Settings.Script.txt`
     ```maniascript
@@ -81,16 +83,19 @@ void OnClickJoin() {
         JoinLink = {{{P}}}TL::Replace(JoinLink, "#spectate", "#qspectate");
     ```
     */
+    lastClick = Time::Now;
     string jl = g_lastJoinLink.Replace("#join", "#qjoin").Replace("#spectate", "#qspectate");
     cast<CTrackMania>(GetApp()).ManiaPlanetScriptAPI.OpenLink(jl, CGameManiaPlanetScriptAPI::ELinkType::ManialinkBrowser);
 }
 
 bool IsButtonActive() {
+    if (uint64(Time::Stamp) > g_lastJoinLinkTS + 3600) return false; // don't show button >1hr after g_lastJoinLinkTS
+    if (Time::Now < (lastClick + 10000) && lastClick != 0) return false;
     if (!IsInMainMenu(GetApp())) return false;
     if (g_lastJoinLink.Length == 0) return false;
+    if (cast<CTrackMania>(GetApp()).Operation_InProgress) return false;
     auto lp = GetApp().LoadProgress;
     if (lp !is null && lp.State != EState::Disabled) return false;
-    if (cast<CTrackMania>(GetApp()).Operation_InProgress) return false;
     if (!IsAppropriateMenu()) return false;
     return true;
 }

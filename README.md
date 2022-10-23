@@ -1,4 +1,4 @@
-# Rejoin Last Game
+# Rejoin Last Server
 
 This plugin provides a clickable button on the main menu to rejoin the last server you were connected to. Useful if TM crashes, or you quit out but want to rejoin.
 
@@ -8,6 +8,6 @@ Authors: XertroV
 
 Suggestions/feedback: @XertroV on Openplanet discord
 
-Code/issues: [https://github.com/XertroV/tm-rejoin-last-game](https://github.com/XertroV/tm-rejoin-last-game)
+Code/issues: [https://github.com/XertroV/tm-rejoin-last-server](https://github.com/XertroV/tm-rejoin-last-server)
 
 GL HF
