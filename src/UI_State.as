@@ -19,7 +19,7 @@ void Update(float dt) {
 
 // range 0-1; tracks animation for hover
 float buttonBorder = 0;
-float buttonHoverAnimDuration = 50; // ms
+float buttonHoverAnimDuration = 100; // ms
 
 const vec2 buttonPos1440 = vec2(806, 89);
 const vec2 buttonSize1440 =  vec2(533, 93);

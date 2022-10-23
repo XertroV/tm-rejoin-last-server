@@ -66,7 +66,7 @@ void WriteOutJoinLink(const string &in jl) {
 /** Called whenever a mouse button is pressed. `x` and `y` are the viewport coordinates.
 */
 UI::InputBlocking OnMouseButton(bool down, int button, int x, int y) {
-    if (!down || button != 0) return UI::InputBlocking::DoNothing;
+    if (!down || button != 0 || !IsButtonActive()) return UI::InputBlocking::DoNothing;
     if (Within(vec2(x, y), buttonPos, buttonSize)) {
         startnew(OnClickJoin);
         return UI::InputBlocking::Block;
@@ -75,12 +75,28 @@ UI::InputBlocking OnMouseButton(bool down, int button, int x, int y) {
 }
 
 void OnClickJoin() {
-    cast<CTrackMania>(GetApp()).ManiaPlanetScriptAPI.OpenLink(g_lastJoinLink.Replace("#join", "#qjoin").Replace("#spectate", "#qspectate"), CGameManiaPlanetScriptAPI::ELinkType::ManialinkBrowser);
+    /* from `Titles/Trackmania/Scripts/Libs/Nadeo/TMNext/TrackMania/Menu/Components/Settings.Script.txt`
+    ```maniascript
+        declare Text JoinLink = {{{P}}}TL::Replace(ValidatedValue, "#join", "#qjoin");
+        JoinLink = {{{P}}}TL::Replace(JoinLink, "#spectate", "#qspectate");
+    ```
+    */
+    string jl = g_lastJoinLink.Replace("#join", "#qjoin").Replace("#spectate", "#qspectate");
+    cast<CTrackMania>(GetApp()).ManiaPlanetScriptAPI.OpenLink(jl, CGameManiaPlanetScriptAPI::ELinkType::ManialinkBrowser);
+}
+
+bool IsButtonActive() {
+    if (!IsInMainMenu(GetApp())) return false;
+    if (g_lastJoinLink.Length == 0) return false;
+    auto lp = GetApp().LoadProgress;
+    if (lp !is null && lp.State != EState::Disabled) return false;
+    if (cast<CTrackMania>(GetApp()).Operation_InProgress) return false;
+    if (!IsAppropriateMenu()) return false;
+    return true;
 }
 
 void Render() {
-    if (!IsInMainMenu(GetApp())) return;
-    if (g_lastJoinLink.Length == 0) return;
+    if (!IsButtonActive()) return;
     DrawRejoin();
 }
 
