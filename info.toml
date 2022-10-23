@@ -2,7 +2,7 @@
 name     = "Rejoin Last Server"
 author   = "XertroV"
 category = "Utilities"
-version  = "1.0.2"
+version  = "1.0.3"
 
 [script]
 #__DEFINES__
