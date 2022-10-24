@@ -166,7 +166,7 @@ void DrawRejoin() {
     nvg::Reset();
     // button bg and stroke
     nvg::BeginPath();
-    SlantyRect(bp, buttonSize);
+    auto slantOffs = SlantyRect(bp, buttonSize);
     nvg::FillColor(_bgHovColor);
     nvg::Fill();
     nvg::FillColor(_bgColor * vec4(1, 1, 1, 1 - buttonBorder));
@@ -180,19 +180,21 @@ void DrawRejoin() {
     nvg::FontSize(buttonSize.y * 0.4);
     nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
 
+    auto textPos = bp + slantOffs + (buttonSize * 0.5);
     nvg::FillColor(_textHovColor);
-    nvg::Text(bp + (buttonSize * 0.5), "Rejoin Last Server");
+    nvg::Text(textPos, "Rejoin Last Server");
     nvg::FillColor(_textColor * vec4(1, 1, 1, 1 - buttonBorder));
-    nvg::Text(bp + (buttonSize * 0.5), "Rejoin Last Server");
+    nvg::Text(textPos, "Rejoin Last Server");
     nvg::FillColor(_textColor * vec4(1, 1, 1, buttonBorder));
-    nvg::Text(bp + (buttonSize * 0.5) + (buttonSize * vec2(0, .9)), g_lastServerName);
+    nvg::Text(textPos + (buttonSize * vec2(0, .9)), g_lastServerName);
 }
 
 float D2R(float degs) {
     return TAU * degs / 360.0;
 }
 
-void SlantyRect(vec2 pos, vec2 size, bool topRound = true, bool bottomRound = true) {
+// returns offset from previous center (useful for text)
+vec2 SlantyRect(vec2 pos, vec2 size, bool topRound = true, bool bottomRound = true) {
     auto blCornerAngle = D2R(80);
     auto topXOffs = size.y / Math::Tan(blCornerAngle);
     float radius = size.y * 0.251;
@@ -209,6 +211,7 @@ void SlantyRect(vec2 pos, vec2 size, bool topRound = true, bool bottomRound = tr
     else
         nvg::LineTo(pos + size);
     nvg::LineTo(pos + vec2(0, size.y));
+    return tlOffs / 2;
 }
 
 void NotifyDepError(const string &in msg) {
