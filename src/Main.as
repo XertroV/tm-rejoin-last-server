@@ -73,6 +73,7 @@ void OnUpdateJoinLink(CTrackManiaNetworkServerInfo@ si) {
 void MainCoro() {
     bool canSaveJoinLink, notCurrentlyDriving;
     while (permissionsAreOkay) {
+        if (GetApp().RootMap !is null) lastClick = 0;  // reset click counter when we join a server so we can have a longer disabled-button-on-click
         CTrackManiaNetworkServerInfo@ si = GetServerInfo(GetApp());
         canSaveJoinLink = si !is null && si.JoinLink.Length > 0;
         notCurrentlyDriving = GetUISequence(GetApp()) != CGamePlaygroundUIConfig::EUISequence::Playing;
@@ -117,7 +118,9 @@ void OnClickJoin() {
 }
 
 bool WasClickedRecently() {
-    return Time::Now < (lastClick + 10000) && lastClick != 0;
+    // don't let the user click it twice within 20s -- sometimes joining a server takes this long
+    // note: reset when a map is loaded.
+    return Time::Now < (lastClick + 20000) && lastClick != 0;
 }
 
 /* forClick: when false, `lastClick` won't be considered. This is useful for drawing the button after it has been clicked.
@@ -136,6 +139,9 @@ bool IsButtonActive(bool forClick = true) {
     auto lp = GetApp().LoadProgress;
     if (lp !is null && lp.State != EState::Disabled) return false;
     if (!IsAppropriateMenu()) return false;
+    if (IsSettingsOpen()) return false;
+    if (IsQuitDialogOpen()) return false;
+    if (IsSystemDialogOpen()) return false;
     return true;
 }
 

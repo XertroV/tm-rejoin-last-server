@@ -4,6 +4,32 @@ bool IsInMainMenu(CGameCtnApp@ _app) {
     return true;
 }
 
+bool IsSettingsOpen() {
+    // viewport overlay, index 5, [0][0][0..8]
+    try {
+        // idk now to get the CControlFrame for the settings, but this buffer's length is 5 before opening settings, and 1181 or 1183 after opening settings.
+        return GetApp().Viewport.Overlays[5].m_CorpusVisibles.Length > 100;
+    } catch {
+        warn("IsSettingsOpen exception: " + getExceptionInfo());
+    }
+    return false;
+}
+
+// the dialog that comes up when you press esc at main menu home page
+bool IsQuitDialogOpen() {
+    try {
+        auto frame = GetCurrentUILayer().LocalPage.GetFirstChild("popupmultichoice-quit-game");
+        return frame !is null && frame.Visible;
+    } catch {
+        warn("IsQuitDialogOpen exception: " + getExceptionInfo());
+    }
+    return false;
+}
+
+bool IsSystemDialogOpen() {
+    return GetApp().ActiveMenus.Length > 1;
+}
+
 // only home page atm
 bool IsAppropriateMenu() {
     const string currPage = GetCurrentPage();
