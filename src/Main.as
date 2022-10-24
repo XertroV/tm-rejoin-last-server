@@ -177,15 +177,16 @@ void DrawRejoin() {
     nvg::ClosePath();
     // text
     nvg::FontFace(nvgFontMontseratt);
-    nvg::FontSize(buttonSize.y * 0.4);
+    nvg::FontSize(buttonSize.y * 0.5);
     nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
 
     auto textPos = bp + slantOffs + (buttonSize * 0.5);
     nvg::FillColor(_textHovColor);
-    nvg::Text(textPos, "Rejoin Last Server");
+    nvg::Text(textPos, "REJOIN SERVER");
     nvg::FillColor(_textColor * vec4(1, 1, 1, 1 - buttonBorder));
-    nvg::Text(textPos, "Rejoin Last Server");
+    nvg::Text(textPos, "REJOIN SERVER");
     nvg::FillColor(_textColor * vec4(1, 1, 1, buttonBorder));
+    nvg::FontSize(buttonSize.y * 0.375);
     nvg::Text(textPos + (buttonSize * vec2(0, .9)), StripFormatCodes(g_lastServerName));
 }
 
