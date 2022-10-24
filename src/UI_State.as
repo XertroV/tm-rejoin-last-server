@@ -59,7 +59,7 @@ void UpdateButtonHover(float dt) {
     }
     if (_nextIsHovering != isHovering) {
         isHovering = _nextIsHovering;
-        if (IsButtonActive())
+        if (IsButtonActive(false))
             Audio::Play(menuOnHover, 0.20);
     }
 }

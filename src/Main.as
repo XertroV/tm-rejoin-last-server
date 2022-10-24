@@ -1,4 +1,5 @@
 string g_lastJoinLink = "";
+string g_lastServerName = "";
 uint64 g_lastJoinLinkTS = 0;
 int nvgFontMontseratt = nvg::LoadFont("fonts/Montserrat-ExtraBoldItalic.ttf");
 Audio::Sample@ menuClick = Audio::LoadSample("audio/MenuSelection.wav");
@@ -40,8 +41,9 @@ void LoadPreviousJoinLink() {
     auto j = Json::FromFile(JoinLinkFilePath);
     if (j.GetType() != Json::Type::Object) return;
     try {
-        g_lastJoinLink = j['joinLink'];
-        g_lastJoinLinkTS = Text::ParseUInt64(j['ts']);
+        g_lastJoinLink = j.Get('joinLink', "");
+        g_lastServerName = j.Get('serverName', "");
+        g_lastJoinLinkTS = Text::ParseUInt64(j.Get('ts', 0));
         trace_benchmark("Load last JoinLink", startTime);
         dev_trace("Loaded JoinLink: " + g_lastJoinLink + "; ts: " + g_lastJoinLinkTS + "; now - then: " + (Time::Stamp - g_lastJoinLinkTS));
     } catch {
@@ -50,36 +52,42 @@ void LoadPreviousJoinLink() {
     }
 }
 
-void MainCoro() {
-    bool canSaveJoinLink;
-    while (permissionsAreOkay) {
-        auto si = GetServerInfo(GetApp());
-        canSaveJoinLink = si !is null && si.JoinLink.Length > 0;
-        // canSaveJoinLink && (new joinlink || should update TS)
-        if (canSaveJoinLink && (g_lastJoinLink != si.JoinLink || g_lastJoinLinkTS + SecondsBetweenResave < uint64(Time::Stamp))) {
-            OnUpdateJoinLink(si.JoinLink);
-        }
-        // sleep(250);  // for releases
-        yield();  // for dev, to make sure there are no lag spikes
-    }
+void WriteOutJoinLink() {
+    auto obj = Json::Object();
+    obj['joinLink'] = g_lastJoinLink;
+    obj['serverName'] = g_lastServerName;
+    obj['ts'] = '' + Time::Stamp; // avoid exponential notation
+    Json::ToFile(JoinLinkFilePath, obj);
+    dev_trace("Saved last join link w/ timestamp: " + g_lastJoinLink + " for server: " + g_lastServerName);
 }
 
-void OnUpdateJoinLink(const string &in jl) {
+void OnUpdateJoinLink(CTrackManiaNetworkServerInfo@ si) {
     uint startTime = Time::Now;
-    g_lastJoinLink = jl;
+    g_lastJoinLink = si.JoinLink;
+    g_lastServerName = si.ServerName;
     g_lastJoinLinkTS = Time::Stamp;
-    WriteOutJoinLink(jl);
+    WriteOutJoinLink();
     trace_benchmark("Update last JoinLink", startTime);
 }
 
-void WriteOutJoinLink(const string &in jl) {
-    auto obj = Json::Object();
-    obj['joinLink'] = jl;
-    obj['ts'] = '' + Time::Stamp; // avoid exponential notation
-    Json::ToFile(JoinLinkFilePath, obj);
-    dev_trace("Saved last join link w/ timestamp: " + jl);
+void MainCoro() {
+    bool canSaveJoinLink, notCurrentlyDriving;
+    while (permissionsAreOkay) {
+        CTrackManiaNetworkServerInfo@ si = GetServerInfo(GetApp());
+        canSaveJoinLink = si !is null && si.JoinLink.Length > 0;
+        notCurrentlyDriving = GetUISequence(GetApp()) != CGamePlaygroundUIConfig::EUISequence::Playing;
+        // canSaveJoinLink && notCurrentlyDriving && (new joinlink || should update TS)
+        if (canSaveJoinLink && notCurrentlyDriving && (g_lastJoinLink != si.JoinLink || g_lastJoinLinkTS + SecondsBetweenResave < uint64(Time::Stamp))) {
+            OnUpdateJoinLink(si);
+        }
+        yield();
+    }
 }
 
+/*
+UI INTERACTIONS
+Other button stuff in ./UI_State.as
+*/
 
 /** Called whenever a mouse button is pressed. `x` and `y` are the viewport coordinates.
 */
@@ -108,13 +116,23 @@ void OnClickJoin() {
     cast<CTrackMania>(GetApp()).ManiaPlanetScriptAPI.OpenLink(jl, CGameManiaPlanetScriptAPI::ELinkType::ManialinkBrowser);
 }
 
-bool IsButtonActive() {
+bool WasClickedRecently() {
+    return Time::Now < (lastClick + 10000) && lastClick != 0;
+}
+
+/* forClick: when false, `lastClick` won't be considered. This is useful for drawing the button after it has been clicked.
+   immediately after click there's a 'connecting' dialog which sets Operation_InProgress=true so skip that.
+   also skip
+*/
+bool IsButtonActive(bool forClick = true) {
     if (!permissionsAreOkay) return false;
     if (uint64(Time::Stamp) > g_lastJoinLinkTS + 3600) return false; // don't show button >1hr after g_lastJoinLinkTS
-    if (Time::Now < (lastClick + 10000) && lastClick != 0) return false;
+    if (forClick && WasClickedRecently()) return false;
     if (!IsInMainMenu(GetApp())) return false;
+    if (GetApp().Editor !is null) return false;
+    if (GetApp().CurrentPlayground !is null) return false;
     if (g_lastJoinLink.Length == 0) return false;
-    if (cast<CTrackMania>(GetApp()).Operation_InProgress) return false;
+    if (forClick && cast<CTrackMania>(GetApp()).Operation_InProgress) return false;
     auto lp = GetApp().LoadProgress;
     if (lp !is null && lp.State != EState::Disabled) return false;
     if (!IsAppropriateMenu()) return false;
@@ -122,7 +140,7 @@ bool IsButtonActive() {
 }
 
 void Render() {
-    if (!IsButtonActive()) return;
+    if (!IsButtonActive(false)) return;
     DrawRejoin();
 }
 
@@ -136,32 +154,38 @@ const vec4 textNormalColor = vec4(0x6e / 255.0, 0xfa / 255.0, 0xa0 / 255.0, 1);
 const vec4 textHoverColor = vec4(1, 1, 1, 1);
 
 void DrawRejoin() {
-    /* get position to draw
-
-    */
     auto bp = buttonPos;
+    vec4 _bgHovColor = buttonBgHoverColor;
+    vec4 _bgColor = buttonBgColor;
+    vec4 _textHovColor = textHoverColor;
+    vec4 _textColor = textNormalColor;
+    if (WasClickedRecently()) {
+        _bgHovColor = vec4(1, 1, 1, 2) / 4;
+        _bgColor = _bgHovColor;
+    }
     nvg::Reset();
+    // button bg and stroke
     nvg::BeginPath();
     SlantyRect(bp, buttonSize);
-    // nvg::FillColor(vec4(0, 0, 0, .99));
-    nvg::FillColor(buttonBgHoverColor);
+    nvg::FillColor(_bgHovColor);
     nvg::Fill();
-    nvg::FillColor(buttonBgColor * vec4(1, 1, 1, 1 - buttonBorder));
+    nvg::FillColor(_bgColor * vec4(1, 1, 1, 1 - buttonBorder));
     nvg::Fill();
     nvg::StrokeColor(vec4(1, 1, 1, buttonBorder));
     nvg::StrokeWidth(3 * Screen.y / RefScreen.y);
     nvg::Stroke();
     nvg::ClosePath();
-    nvg::BeginPath();
+    // text
     nvg::FontFace(nvgFontMontseratt);
     nvg::FontSize(buttonSize.y * 0.4);
     nvg::TextAlign(nvg::Align::Center | nvg::Align::Middle);
-    nvg::FillColor(textHoverColor);
+
+    nvg::FillColor(_textHovColor);
     nvg::Text(bp + (buttonSize * 0.5), "Rejoin Last Server");
-    nvg::FillColor(textNormalColor * vec4(1, 1, 1, 1 - buttonBorder));
+    nvg::FillColor(_textColor * vec4(1, 1, 1, 1 - buttonBorder));
     nvg::Text(bp + (buttonSize * 0.5), "Rejoin Last Server");
-    // nvg::Fill();
-    nvg::ClosePath();
+    nvg::FillColor(_textColor * vec4(1, 1, 1, buttonBorder));
+    nvg::Text(bp + (buttonSize * 0.5) + (buttonSize * vec2(0, .9)), g_lastServerName);
 }
 
 float D2R(float degs) {
@@ -187,12 +211,6 @@ void SlantyRect(vec2 pos, vec2 size, bool topRound = true, bool bottomRound = tr
     nvg::LineTo(pos + vec2(0, size.y));
 }
 
-void RenderInterface() {
-}
-
-void RenderMenu() {
-}
-
 void NotifyDepError(const string &in msg) {
     warn(msg);
     UI::ShowNotification(Meta::ExecutingPlugin().Name + ": Dependency Error", msg, vec4(.9, .6, .1, .5), 15000);
@@ -201,4 +219,25 @@ void NotifyDepError(const string &in msg) {
 void NotifyPermissionsError(const string &in issues) {
     warn("Lacked permissions: " + issues);
     UI::ShowNotification(Meta::ExecutingPlugin().Name + ": Permissions Error", "Lacking permission(s): " + issues, vec4(.9, .6, .1, .5), 15000);
+}
+
+/* get game stuff */
+
+CTrackManiaNetworkServerInfo@ GetServerInfo(CGameCtnApp@ app) {
+    auto _app = cast<CTrackMania>(app);
+    if (_app is null || _app.Network is null) return null;
+    return cast<CTrackManiaNetworkServerInfo>(_app.Network.ServerInfo);
+}
+
+CGamePlaygroundClientScriptAPI@ GetPlaygroundClientScriptAPISync(CGameCtnApp@ app) {
+    try {
+        return cast<CTrackMania>(app).Network.PlaygroundClientScriptAPI;
+    } catch {}
+    return null;
+}
+
+CGamePlaygroundUIConfig::EUISequence GetUISequence(CGameCtnApp@ app) {
+    auto pcs = GetPlaygroundClientScriptAPISync(app);
+    if (pcs !is null) return pcs.UI.UISequence;
+    return CGamePlaygroundUIConfig::EUISequence::None;
 }
