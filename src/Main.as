@@ -25,7 +25,7 @@ void Main() {
 
 bool permissionsAreOkay = false;
 bool PermissionsOkay() {
-    bool allowed = Permissions::PlayPublicClubRoom ();
+    bool allowed = Permissions::PlayPublicClubRoom();
     if (!allowed) {
         NotifyPermissionsError("Permissions::PlayPublicClubRoom (club access required)");
         while (true) yield();

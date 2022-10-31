@@ -48,7 +48,15 @@ const string GetCurrentPage() {
 }
 
 CGameUILayer@ GetCurrentUILayer() {
-    auto ls = cast<CTrackMania>(GetApp()).MenuManager.MenuCustom_CurrentManiaApp.UILayers;
+    auto app = cast<CTrackMania>(GetApp());
+    CGameManiaAppTitle@ mm;
+    try {
+        @mm = app.MenuManager.MenuCustom_CurrentManiaApp;
+    } catch {
+        return null;
+    }
+    if (mm is null) return null;
+    MwFastBuffer<CGameUILayer@> ls = mm.UILayers;
     bool foundOverlay = false;
     uint overlayIx = 13;
     // overlay currently at ix=13, start a little before
