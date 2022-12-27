@@ -73,11 +73,16 @@ CGameUILayer@ GetCurrentUILayer() {
     }
     // go backwards to prioritize pages on top of other pages
     for (uint i = ls.Length - 1; i > overlayIx; i--) {
-        auto layer = ls[i];
-        if (layer.IsVisible) {
-            if (layer.ManialinkPageUtf8.StartsWith("\n<manialink name=\"Page_")) {
-                return layer;
+        try {
+            auto layer = ls[i];
+            if (layer.IsVisible) {
+                if (layer.ManialinkPageUtf8.StartsWith("\n<manialink name=\"Page_")) {
+                    return layer;
+                }
             }
+        } catch {
+            warn("exception looking for menu page: " + getExceptionInfo());
+            break;
         }
     }
     return null;
