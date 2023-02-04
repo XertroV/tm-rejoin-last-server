@@ -48,9 +48,9 @@ const string GetCurrentPage() {
 }
 
 CGameUILayer@ GetCurrentUILayer() {
-    auto app = cast<CTrackMania>(GetApp());
     CGameManiaAppTitle@ mm;
     try {
+        auto app = cast<CTrackMania>(GetApp());
         @mm = app.MenuManager.MenuCustom_CurrentManiaApp;
     } catch {
         return null;
