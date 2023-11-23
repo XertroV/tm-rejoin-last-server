@@ -5,7 +5,7 @@ int nvgFontMontseratt = nvg::LoadFont("fonts/Montserrat-ExtraBoldItalic.ttf");
 
 const string JoinLinkFilePath = IO::FromStorageFolder("lastJoinLink.json.txt");
 #if DEV
-const uint SecondsBetweenResave = 60;
+const uint SecondsBetweenResave = 5 * 60;
 #else
 const uint SecondsBetweenResave = 5 * 60; // update once per 5 minutes to keep an accurate-enough timestamp
 #endif
@@ -135,7 +135,7 @@ bool IsButtonActive(bool forClick = true) {
     if (g_lastJoinLink.Length == 0) return false;
     if (forClick && cast<CTrackMania>(GetApp()).Operation_InProgress) return false;
     auto lp = GetApp().LoadProgress;
-    if (lp !is null && lp.State != EState::Disabled) return false;
+    if (lp !is null && lp.State != NGameLoadProgress::EState::Disabled) return false;
     if (!IsAppropriateMenu()) return false;
     if (IsSettingsOpen()) return false;
     if (IsQuitDialogOpen()) return false;
