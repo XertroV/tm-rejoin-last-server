@@ -40,7 +40,7 @@ void LoadPreviousJoinLink() {
     if (j.GetType() != Json::Type::Object) return;
     try {
         g_lastJoinLink = j.Get('joinLink', "");
-        g_lastServerName = StripFormatCodes(j.Get('serverName', ""));
+        g_lastServerName = Text::StripFormatCodes(j.Get('serverName', ""));
         g_lastJoinLinkTS = Text::ParseUInt64(j.Get('ts', 0));
         trace_benchmark("Load last JoinLink", startTime);
         dev_trace("Loaded JoinLink: " + g_lastJoinLink + "; ts: " + g_lastJoinLinkTS + "; now - then: " + (Time::Stamp - g_lastJoinLinkTS));
@@ -191,7 +191,7 @@ void DrawRejoin() {
     nvg::Text(textPos, "REJOIN SERVER");
     nvg::FillColor(_textColor * vec4(1, 1, 1, buttonBorder));
     nvg::FontSize(buttonSize.y * 0.375);
-    nvg::Text(textPos + (buttonSize * vec2(0, .9)), StripFormatCodes(g_lastServerName));
+    nvg::Text(textPos + (buttonSize * vec2(0, .9)), Text::StripFormatCodes(g_lastServerName));
 }
 
 float D2R(float degs) {
